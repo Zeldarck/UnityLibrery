@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿#if UNITY_EDITOR
+
+using System.IO;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
@@ -7,7 +9,7 @@ using System;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
-[InitializeOnLoad]
+//[InitializeOnLoad]
 public static class EventGenerator
 {
 
@@ -22,8 +24,7 @@ public static class EventGenerator
         WriteCodeFile();
     }
 
-  
-
+ 
     private static List<List<string>> RetrieveEvents()
     {
         string path = string.Concat(Application.dataPath, Path.DirectorySeparatorChar, m_path);
@@ -128,8 +129,8 @@ public static class EventGenerator
             for (int j = 1; j < m_events[i].Count; j++)
             {
                 actionBuilder.Append(", " + m_events[i][j]);
-                parametersBuilder.Append(", " + m_events[i][j] + " a_" + char.ToLower(m_events[i][j][0]) + m_events[i][j].Substring(1));
-                inputBuilder.Append(", a_" + char.ToLower(m_events[i][j][0]) + m_events[i][j].Substring(1));
+                parametersBuilder.Append(", " + m_events[i][j] + " a_" + j + char.ToLower(m_events[i][j][0]) + m_events[i][j].Substring(1));
+                inputBuilder.Append(", a_"+ j + char.ToLower(m_events[i][j][0]) + m_events[i][j].Substring(1));
             }
             actionBuilder.Append(">");
 
@@ -238,3 +239,5 @@ public static class EventGenerator
 
 
 }
+
+#endif

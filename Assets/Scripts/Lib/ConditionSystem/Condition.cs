@@ -10,6 +10,9 @@ using System;
 public class Condition
 {
     [SerializeField]
+    string m_name;
+
+    [SerializeField]
     bool m_isList;
 
     [SerializeField]
@@ -23,6 +26,21 @@ public class Condition
 
     [SerializeField]
     ConditionCommand m_conditionCommand;
+
+
+    public void SetParam(string a_name, object a_value)
+    {
+        foreach (Condition condition in m_conditions)
+        {
+            condition.SetParam(a_name, a_value);
+        }
+
+        if(m_conditionCommand != null)
+        {
+            m_conditionCommand.SetParam(a_name, a_value);
+        }
+    }
+
 
     public bool Execute()
     {
@@ -79,6 +97,14 @@ public class Condition
         return res;
     }
 
+
+    public void Reset()
+    {
+        m_isList = false;
+        m_isOr = false;
+        m_isNot = false;
+        m_conditionCommand = null;
+    }
 
 }
 

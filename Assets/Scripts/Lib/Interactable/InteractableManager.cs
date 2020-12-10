@@ -50,11 +50,11 @@ public class InteractableManager : MonoBehaviour
                             m_interactables[m_activeInteractable].OnExit(player);
                         }
 
-                        if (player.SetInteractable(m_interactables[i]))
-                        {
+                     /*   if (player.SetInteractable(m_interactables[i]))
+                        {*/
                             interactable.OnEnter(player);
                             m_activeInteractable = i;
-                        }
+                       // }
                     }
 
                     break;
@@ -74,7 +74,7 @@ public class InteractableManager : MonoBehaviour
     {
         if (other.gameObject.CompareTag("Player") && --m_activeTriggers == 0 && m_activeInteractable >= 0)
         {
-            other.GetComponent<PlayerController>().ResetInteractable();
+            //other.GetComponent<PlayerController>().ResetInteractable();
         }
     }
 

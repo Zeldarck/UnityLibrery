@@ -7,156 +7,61 @@ using System.Linq;
 using System;
 
 [CustomPropertyDrawer(typeof(Condition))]
-public class ConditionEditor : PropertyDrawer
+public class ConditionEditor : EditorCommon
 {
-
-    float m_currentHeight = 0;
-
-    private void GenerateStyle(Rect position)
+    protected void GenerateStyle(Rect a_position)
     {
         Color color = GUI.color;
 
         Color faded = new Color(0, 0, 0);
-        faded.a = 0.18f;
+        faded.a = 0.05f;
         GUI.color = faded;
-        GUI.Box(position, "");
+        GUI.Box(a_position, "");
 
-        GUI.color = new Color(0, 0, 0);
-        Rect bottomline = new Rect(position.x, position.y + position.height, position.width, 2);
+        GUI.color = new Color(0.95f,0.95f,0.95f);
+        Rect bottomline = new Rect(a_position.x, a_position.y + a_position.height, a_position.width, 2);
         GUI.Box(bottomline, "");
 
         GUI.color = color;
     }
 
 
-    private SerializedProperty CreatePropertyField(Rect a_position, SerializedProperty a_property, GUIContent a_label, string a_subProperty)
+    public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
     {
-        SerializedProperty subProperty = a_property.FindPropertyRelative(a_subProperty);
+        base.OnGUI(position, property, label);
 
-        return CreatePropertyField(a_position, subProperty, a_label);
-    }
+        GenerateStyle(position);
+        label = EditorGUI.BeginProperty(position, label, property);
 
+        int originalIndent = EditorGUI.indentLevel;
 
-    private SerializedProperty CreatePropertyField(Rect a_position, SerializedProperty a_property, GUIContent a_label)
-    {
-        Rect rect = GetNextRect(a_position, a_property, a_label);
+        // Draw label
+        GUIStyle labelStyle = new GUIStyle(EditorStyles.foldout);
+        labelStyle.fontStyle = FontStyle.Bold;
 
-        EditorGUI.PropertyField(rect, a_property, true);
-
-        return a_property;
-    }
-
-
-    private SerializedProperty CreatePopUp(Rect a_position, SerializedProperty a_property, GUIContent a_label, string a_subProperty, List<string> a_choices, Func<SerializedProperty, string> a_stringGetter, out int out_newIndex)
-    {
-        SerializedProperty subProperty = a_property.FindPropertyRelative(a_subProperty);
-      
-        return CreatePopUp(a_position, subProperty, a_label, a_choices, a_stringGetter, out out_newIndex);
-    }
-
-
-    private SerializedProperty CreatePopUp(Rect a_position, SerializedObject a_object, GUIContent a_label, string a_subProperty, List<string> a_choices, Func<SerializedProperty, string> a_stringGetter, out int out_newIndex)
-    {
-        SerializedProperty subProperty = a_object.FindProperty(a_subProperty);
-
-        return CreatePopUp(a_position, subProperty, a_label, a_choices, a_stringGetter, out out_newIndex);
-    }
-
-
-    private SerializedProperty CreatePopUp(Rect a_position, SerializedProperty a_property, GUIContent a_label, List<string> a_choices, Func<SerializedProperty, string> a_stringGetter, out int out_newIndex)
-    {
-        int currIndex = -1;
-        if (a_property != null)
+        if (GenerateFoldout(property, label, true, labelStyle))
         {
-            for (int i = 0; i < a_choices.Count; ++i)
+            CreatePropertyField(property, "m_name");
+
+            SerializedProperty isList = CreatePropertyField(property, "m_isList");
+
+            CreatePropertyField(property, "m_isNot");
+
+
+            if (isList.boolValue)
             {
-                if (a_choices[i] == a_stringGetter(a_property))
-                {
-                    currIndex = i;
-                    break;
-                }
+                CreatePropertyField(property, "m_isOr");
+                CreatePropertyField(property, "m_conditions");
+            }
+            else
+            {
+                DisplayCondition(position, property, label);
             }
         }
 
-
-        Rect rect = GetNextRect(a_position, a_property, a_label);
-        out_newIndex = -1;
-        out_newIndex = EditorGUI.Popup(rect, a_property.displayName, currIndex, a_choices.ToArray());
-
-
-        return a_property;
-    }
-
-
-
-
-    private Rect GetNextRect(Rect a_position, SerializedProperty a_property, GUIContent a_label)
-    {
-        Rect rect = new Rect(a_position.x, a_position.y + m_currentHeight + EditorGUIUtility.standardVerticalSpacing, a_position.width, EditorGUI.GetPropertyHeight(a_property, a_label, true));
-
-        m_currentHeight += EditorGUI.GetPropertyHeight(a_property, a_label, true) + EditorGUIUtility.standardVerticalSpacing;
-
-        return rect;
-    }
-
-
-
-
-
-    private SerializedObject GeneratePropetiesFields(SerializedProperty a_property, Rect a_position, GUIContent a_label)
-    {
-        SerializedObject serializedObj = new UnityEditor.SerializedObject(a_property.objectReferenceValue);
-
-
-        SerializedProperty property = serializedObj.GetIterator();
-
-
-        while (property.NextVisible(true))
-        {
-            Rect rect = GetNextRect(a_position,property,a_label);
-
-            EditorGUI.PropertyField(rect, property, true);
-        }
-
-
-        serializedObj.ApplyModifiedProperties();
-
-        return serializedObj;
-    }
-
-
-
-    public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
-    {
-        m_currentHeight = 0;
-
-        GenerateStyle(position);
-
-
-        label = EditorGUI.BeginProperty(position, label, property);
-        int originalIndent = EditorGUI.indentLevel;
-
-
-
-        SerializedProperty isList = CreatePropertyField(position, property, label, "m_isList");
-        CreatePropertyField(position, property, label, "m_isNot");
-
-
-        if (isList.boolValue)
-        {
-            CreatePropertyField(position, property, label, "m_isOr");
-            CreatePropertyField(position, property, label, "m_conditions");
-        }
-        else
-        {
-            DisplayCondition(position, property, label);
-        }
         EditorGUI.indentLevel = originalIndent;
 
         EditorGUI.EndProperty();
-
-
-
 
     }
 
@@ -180,7 +85,7 @@ public class ConditionEditor : PropertyDrawer
 
         int newIndex = 0;
 
-        SerializedProperty commandProperty = CreatePopUp(a_position, a_property, a_label, "m_conditionCommand", allConditionCommandTypeStrings, (o) => { return (o.objectReferenceValue != null ? o.objectReferenceValue.GetType().Name : null);} , out newIndex);
+        SerializedProperty commandProperty = CreatePopUp(a_property, "m_conditionCommand", allConditionCommandTypeStrings, (o) => { return (o.objectReferenceValue != null ? o.objectReferenceValue.GetType().Name : null);} , out newIndex);
 
         if (EditorGUI.EndChangeCheck())
         {
@@ -188,17 +93,13 @@ public class ConditionEditor : PropertyDrawer
         }
 
 
-
-
         //If Class choosen,display fields and methods popUp
         if (commandProperty.objectReferenceValue != null)
         {
             EditorGUI.indentLevel += 2;
 
-
-            SerializedObject commandObject = GeneratePropetiesFields(commandProperty, a_position, a_label);
-
-
+            SerializedObject commandObject = new UnityEditor.SerializedObject(commandProperty.objectReferenceValue);
+            GeneratePropetiesFields(commandObject);
 
             List<string> methodsNames = new List<string>();
             MethodInfo[] methodInfos = allConditionCommandType[newIndex].GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
@@ -210,7 +111,7 @@ public class ConditionEditor : PropertyDrawer
 
             EditorGUI.BeginChangeCheck();
 
-            SerializedProperty methodProperty = CreatePopUp(a_position, commandObject, a_label, "m_method", methodsNames, (o) => { return o.stringValue; }, out newIndex);
+            SerializedProperty methodProperty = CreatePopUp(commandObject, "m_method", methodsNames, (o) => { return o.stringValue; }, out newIndex);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -237,10 +138,10 @@ public class ConditionEditor : PropertyDrawer
                     {
                         if (paramProperty.name == parametter.Name)
                         {
+                            CreatePropertyField(paramProperty);
                             break;
                         }
                     }
-                    CreatePropertyField(a_position, paramProperty, a_label);
                 }
             }
 
@@ -256,65 +157,79 @@ public class ConditionEditor : PropertyDrawer
 
     public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
     {
+      
         float totalHeight = 0;
         SerializedProperty isList = property.FindPropertyRelative("m_isList");
 
-        totalHeight += EditorGUI.GetPropertyHeight(property, label, true) + EditorGUIUtility.standardVerticalSpacing;
-        totalHeight += EditorGUI.GetPropertyHeight(property.FindPropertyRelative("m_isList"), label, true) + EditorGUIUtility.standardVerticalSpacing;
-        totalHeight += EditorGUI.GetPropertyHeight(property.FindPropertyRelative("m_isNot"), label, true) + EditorGUIUtility.standardVerticalSpacing;
 
-        if (!isList.boolValue)
+        //to handle the label
+        totalHeight += EditorGUI.GetPropertyHeight(SerializedPropertyType.String, label) + EditorGUIUtility.standardVerticalSpacing; 
+
+
+        if (property.isExpanded)
         {
-            UnityEngine.Object command = property.FindPropertyRelative("m_conditionCommand").objectReferenceValue;
-            if (command != null)
+
+            totalHeight += EditorGUI.GetPropertyHeight(property.FindPropertyRelative("m_name"), label, true) + EditorGUIUtility.standardVerticalSpacing;       
+            totalHeight += EditorGUI.GetPropertyHeight(property.FindPropertyRelative("m_isList"), label, true) + EditorGUIUtility.standardVerticalSpacing;
+            totalHeight += EditorGUI.GetPropertyHeight(property.FindPropertyRelative("m_isNot"), label, true) + EditorGUIUtility.standardVerticalSpacing;
+
+            if (!isList.boolValue)
             {
+                UnityEngine.Object command = property.FindPropertyRelative("m_conditionCommand").objectReferenceValue;
 
-                SerializedObject commandObject = new UnityEditor.SerializedObject(command as ConditionCommand);
+                //it's condition command & script
+                totalHeight += EditorGUI.GetPropertyHeight(property.FindPropertyRelative("m_conditionCommand"), label, true) + EditorGUIUtility.standardVerticalSpacing; 
 
-                SerializedProperty propertyIterator = commandObject.GetIterator();
-
-                while (propertyIterator.NextVisible(true))
+                if (command != null)
                 {
-                    totalHeight += EditorGUI.GetPropertyHeight(propertyIterator, label, true) + EditorGUIUtility.standardVerticalSpacing;
-                }
 
+                    SerializedObject commandObject = new UnityEditor.SerializedObject(command as ConditionCommand);
 
-                SerializedProperty methodProperty = commandObject.FindProperty("m_method");
+                    SerializedProperty propertyIterator = commandObject.GetIterator();
 
-                totalHeight += EditorGUI.GetPropertyHeight(methodProperty, label, true) + EditorGUIUtility.standardVerticalSpacing;
-
-                MethodInfo methodInfo = (command as ConditionCommand).GetType().GetMethod(methodProperty.stringValue);
-                if (methodInfo != null)
-                {
-                    for (int i = 0; i < methodInfo.GetParameters().Length; i++)
+                    while (propertyIterator.NextVisible(true))
                     {
-                        ParameterInfo parametter = methodInfo.GetParameters()[i];
+                        totalHeight += EditorGUI.GetPropertyHeight(propertyIterator, label, true) + EditorGUIUtility.standardVerticalSpacing;
+                    }
 
-                        propertyIterator = commandObject.GetIterator();
 
-                        while (propertyIterator.Next(true))
+                    SerializedProperty methodProperty = commandObject.FindProperty("m_method");
+
+                    totalHeight += EditorGUI.GetPropertyHeight(methodProperty, label, true) + EditorGUIUtility.standardVerticalSpacing;
+
+                    MethodInfo methodInfo = (command as ConditionCommand).GetType().GetMethod(methodProperty.stringValue);
+                    if (methodInfo != null)
+                    {
+                        for (int i = 0; i < methodInfo.GetParameters().Length; i++)
                         {
-                            if (propertyIterator.name == parametter.Name)
-                            {
-                                totalHeight += EditorGUI.GetPropertyHeight(propertyIterator, label, true) + EditorGUIUtility.standardVerticalSpacing;
-                                break;
-                            }
+                            ParameterInfo parametter = methodInfo.GetParameters()[i];
 
+                            propertyIterator = commandObject.GetIterator();
+
+                            while (propertyIterator.Next(true))
+                            {
+                                if (propertyIterator.name == parametter.Name)
+                                {
+                                    totalHeight += EditorGUI.GetPropertyHeight(propertyIterator, label, true) + EditorGUIUtility.standardVerticalSpacing;
+                                    break;
+                                }
+
+                            }
                         }
                     }
+
+
                 }
-
-
             }
-        }
-        else
-        {
-            totalHeight += EditorGUI.GetPropertyHeight(property.FindPropertyRelative("m_isOr"), label, true) + EditorGUIUtility.standardVerticalSpacing;
-            totalHeight += EditorGUI.GetPropertyHeight(property.FindPropertyRelative("m_conditions"), label, true) + EditorGUIUtility.standardVerticalSpacing;
-        }
+            else
+            {
+                totalHeight += EditorGUI.GetPropertyHeight(property.FindPropertyRelative("m_isOr"), label, true) + EditorGUIUtility.standardVerticalSpacing;
+                totalHeight += EditorGUI.GetPropertyHeight(property.FindPropertyRelative("m_conditions"), label, true) + EditorGUIUtility.standardVerticalSpacing;
+            }
 
 
-        totalHeight += EditorGUIUtility.standardVerticalSpacing * 3;
+            totalHeight += EditorGUIUtility.standardVerticalSpacing * 3;
+        }
 
         return totalHeight;
     }

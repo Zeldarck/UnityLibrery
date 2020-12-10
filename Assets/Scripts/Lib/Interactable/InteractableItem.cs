@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class InteractableItem : Interactable
 {
-    [SerializeField]
-    Item m_item;
+    /*[SerializeField]
+    Item m_item;*/
 
     [SerializeField]
     bool m_multiple;
@@ -34,11 +34,11 @@ public class InteractableItem : Interactable
     {
         base.Interact(a_player);
 
-        a_player.Inventory.AddItem(m_item);
+     /*   a_player.Inventory.AddItem(m_item);*/
 
         Taken();
-
-        a_player.ResetInteractable();
+        
+        /*a_player.ResetInteractable();*/
     }
 
     void Taken()

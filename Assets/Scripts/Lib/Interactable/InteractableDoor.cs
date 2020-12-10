@@ -10,8 +10,8 @@ public class InteractableDoor : Interactable
 
     [SerializeField]
     bool m_isLock;
-    [SerializeField]
-    Item m_key;
+  /*  [SerializeField]
+    Item m_key;*/
 
 
 
@@ -40,7 +40,7 @@ public class InteractableDoor : Interactable
 
     public override bool IsInteractable(PlayerController a_player)
     {
-        return base.IsInteractable(a_player) && ((a_player.Inventory.HasItem(m_key) && m_isLock) || !m_isLock);
+        return base.IsInteractable(a_player) && ((/*a_player.Inventory.HasItem(m_key) &&*/ m_isLock) || !m_isLock);
     }
 
     protected override void Interact(PlayerController a_player)
@@ -49,7 +49,7 @@ public class InteractableDoor : Interactable
 
         if (m_isLock)
         {
-            a_player.Inventory.UseItem(m_key);
+          /*  a_player.Inventory.UseItem(m_key);*/
             m_identity.ObjectIdentity.Lock(false);
 
             m_isLock = false;
@@ -58,7 +58,7 @@ public class InteractableDoor : Interactable
 
         ChangeState();
 
-        a_player.ResetInteractable();
+      /*  a_player.ResetInteractable();*/
     }
 
     public void ChangeState()

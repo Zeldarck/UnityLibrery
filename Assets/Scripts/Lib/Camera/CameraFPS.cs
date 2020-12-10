@@ -5,41 +5,51 @@ using UnityEngine;
 
 public class CameraFPS : CameraStrategy
 {
-    float m_verticalSpeed;
-    float m_horizontalSpeed;
     Vector3 m_anchorPoint;
     bool m_centerOnTarget = true;
+    bool m_rotateTarget = false;
 
 
 
-    public CameraFPS(float a_verticalSpeed = 3.5f, float a_horizontalSpeed = 5.0f)
+    public CameraFPS(float a_verticalSpeed = 3.5f, float a_horizontalSpeed = 5.0f, bool a_rotateTarget = false)
     {
-        InitValues(a_verticalSpeed, a_horizontalSpeed);
+        InitValues(a_verticalSpeed, a_horizontalSpeed, a_rotateTarget);
     }
 
-    public CameraFPS(Vector3 a_anchorPoint, float a_verticalSpeed = 3.5f, float a_horizontalSpeed = 5.0f)
+    public CameraFPS(Vector3 a_anchorPoint, float a_verticalSpeed = 3.5f, float a_horizontalSpeed = 5.0f, bool a_rotateTarget = false)
     {
-        InitValues(a_verticalSpeed, a_horizontalSpeed);
+        InitValues(a_verticalSpeed, a_horizontalSpeed, a_rotateTarget);
         m_anchorPoint = a_anchorPoint;
         m_centerOnTarget = false;
     }
 
-    private void InitValues(float a_verticalSpeed, float a_horizontalSpeed)
+
+
+    private void InitValues(float a_verticalSpeed, float a_horizontalSpeed, bool a_rotateTarget)
     {
-        m_verticalSpeed = a_verticalSpeed;
-        m_horizontalSpeed = a_horizontalSpeed;
+        VerticalSpeed = a_verticalSpeed;
+        m_rotateTarget = a_rotateTarget;
+        HorizontalSpeed = a_horizontalSpeed;
     }
 
 
-    public override void Update(Transform a_transform)
+    public override void Update()
     {
-        if (m_target)
+        if (m_target && Cursor.lockState == CursorLockMode.Locked)
         {
-            float h = m_horizontalSpeed * Input.GetAxis("Mouse X");
-            float v = m_verticalSpeed * Input.GetAxis("Mouse Y")* -1.0f;
+            float h = HorizontalSpeed * Input.GetAxis("Mouse X");
+            h += (HorizontalSpeed -0.75f) * Input.GetAxis("Horizontal");
 
-            a_transform.Rotate(v, h, 0);
-            a_transform.localRotation = Quaternion.Euler(a_transform.localRotation.eulerAngles.x, a_transform.localRotation.eulerAngles.y, 0);
+            float v = VerticalSpeed * Input.GetAxis("Mouse Y")* -1.0f;
+            v += (VerticalSpeed -0.5f) * Input.GetAxis("Vertical")* -1.0f;
+
+            m_camera.transform.Rotate(v, h, 0);
+            m_camera.transform.localRotation = Quaternion.Euler(m_camera.transform.localRotation.eulerAngles.x, m_camera.transform.localRotation.eulerAngles.y, 0);
+            UpdatePosition();
+            if (m_rotateTarget)
+            {
+                m_target.transform.localRotation = m_camera.transform.localRotation;
+            }
         }
 
     }
@@ -49,20 +59,24 @@ public class CameraFPS : CameraStrategy
         base.SetTarget(a_target);
     }
 
-    public override void Initialize(Transform a_transform)
+    public override void Initialize(Camera a_camera)
     {
-        base.Initialize(a_transform);
+        base.Initialize(a_camera);
         
-        if (m_centerOnTarget)
-        {
-            m_anchorPoint = m_target.transform.position;
-        }
-        a_transform.position = m_anchorPoint;
-        a_transform.localRotation = new Quaternion();// m_target.transform.forward;
+        UpdatePosition();
+        m_camera.transform.localRotation = new Quaternion();// m_target.transform.forward;
 
         Camera.main.cullingMask = (Camera.main.cullingMask ^ LayerMask.GetMask("Player"));
     }
 
+    void UpdatePosition()
+    {
+        if (m_centerOnTarget)
+        {
+            m_anchorPoint = m_target.transform.position;
+        }
+        m_camera.transform.position = m_anchorPoint;
+    }
 
     public override void Release()
     {

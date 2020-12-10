@@ -90,7 +90,7 @@ public abstract class Interactable : MonoBehaviour
 
         if (m_isToggleUse)
         {
-            a_player.Freeze = true;
+          //  a_player.Freeze = true;
             IsUsing = true;
             m_user = a_player;
         }
@@ -107,8 +107,8 @@ public abstract class Interactable : MonoBehaviour
     protected virtual void Release()
     {
         IsUsing = false;
-        m_user.Freeze = false;
-        m_user.ResetInteractable();
+      /*  m_user.Freeze = false;
+        m_user.ResetInteractable();*/
     }
 
     protected virtual void Start()

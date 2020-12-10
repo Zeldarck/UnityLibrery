@@ -5,6 +5,7 @@ using System.Collections;
 using System.Data;
 using System.Text;
 using Mono.Data.SqliteClient;
+using UnityEngine.Networking;
 
 public class DBAccess : Singleton<DBAccess>
 {
@@ -37,10 +38,10 @@ public class DBAccess : Singleton<DBAccess>
                              Application.dataPath + "!/assets/" + a_file);
             // if it doesn't ->
             // open StreamingAssets directory and load the db -> 
-            WWW loadDB = new WWW("jar:file://" + Application.dataPath + "!/assets/" + a_file);
+            UnityWebRequest loadDB = new UnityWebRequest("jar:file://" + Application.dataPath + "!/assets/" + a_file);
             while (!loadDB.isDone) { }
             // then save to Application.persistentDataPath
-            File.WriteAllBytes(filepath, loadDB.bytes);
+            File.WriteAllBytes(filepath, loadDB.downloadHandler.data);
         }
 
         //open db connection

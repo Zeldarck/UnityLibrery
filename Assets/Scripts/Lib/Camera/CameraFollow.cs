@@ -20,20 +20,21 @@ public class CameraFollow : CameraStrategy
     }
 
 
-    public override void Update(Transform a_transform)
+
+    public override void Update()
     {
         if (m_target)
         {
-            a_transform.position = m_target.transform.position + m_offset;
-            a_transform.localRotation = Quaternion.Euler(m_orientation);
+            m_camera.transform.position = m_target.transform.position + m_offset;
+            m_camera.transform.localRotation = Quaternion.Euler(m_orientation);
 
             if (Input.GetAxis("Mouse ScrollWheel") > 0f) // forward
             {
-                m_offset += a_transform.forward * m_speed;
+                m_offset += m_camera.transform.forward * m_speed;
             }
             else if (Input.GetAxis("Mouse ScrollWheel") < 0f) // backwards
             {
-                m_offset -= a_transform.forward * m_speed;
+                m_offset -= m_camera.transform.forward * m_speed;
             }
 
         }

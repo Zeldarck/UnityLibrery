@@ -15,7 +15,7 @@ public class ConditionCommand : ScriptableObject
 
     public bool Execute()
     {
-        MethodInfo info  = GetType().GetMethod(m_method);
+        MethodInfo info = GetType().GetMethod(m_method);
 
         if (info != null)
         {
@@ -39,5 +39,16 @@ public class ConditionCommand : ScriptableObject
         }
 
         return true;
+    }
+
+    public void SetParam(string a_name, object a_value)
+    {
+        for (int j = 0; j < GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance).Length; ++j)
+        {
+            if (GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance)[j].Name == a_name)
+            {
+                GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance)[j].SetValue(this, a_value);
+            }
+        }
     }
 }

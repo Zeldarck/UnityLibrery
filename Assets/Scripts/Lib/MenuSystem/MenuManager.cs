@@ -4,132 +4,176 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 using UnityEngine.Assertions;
+using System;
 
-public enum MENUTYPE { NOTHING, MAIN, END, GAME, PAUSE, SCORE, CHRONO, LOADING, START, LEVEL_CHOOSER, WIN, OPTION };
+public enum MENUTYPE { NOTHING, MAIN, END, GAME, PAUSE, SCORE, CHRONO, LOADING, START, LEVEL_CHOOSER, WIN, OPTION , OPTION_CONTROLS, OPTION_GRAHICS, MAP, STATS, HIGHSCORE, TUTORIAL_END};
 
 
-[System.Serializable]
-public class MenuEntry
-{
-	public MENUTYPE m_type;
-	public Menu m_menu;
-}
-#if NETWORK
-public class MenuManager : NetworkBehaviour
-#else
 public class MenuManager : Singleton<MenuManager>
-#endif
 {
     [SerializeField]
-	List<MenuEntry> m_listMenu;
+    GameObject m_UI;
 
-    MENUTYPE m_currentMenu = MENUTYPE.NOTHING;
+	List<Menu> m_listMenu;
+
 	[SerializeField]
 	MENUTYPE m_startMenu;
 
-    bool m_everOpen = false;
+    Stack<MENUTYPE> m_history = new Stack<MENUTYPE>();
 
-	// Use this for initialization
-	void Start () {
-#if NETWORK
-        StartCoroutine(StartUp());
-#else
-        CloseAllExcept(m_startMenu);
-#endif
-    }
-
-    IEnumerator StartUp()
+	void Start ()
     {
-        yield return new WaitForSeconds(3f);
-        if (!m_everOpen)
-        {
-            CloseAllExcept(m_startMenu);
-        }
-
-    }
-
-
-    void CloseAllExcept(MENUTYPE a_type)
-    {
-        foreach (MenuEntry entry in m_listMenu)
-        {
-            entry.m_menu.gameObject.SetActive(false);
-        }
+        m_listMenu = new List<Menu>(m_UI.GetComponentsInChildren<Menu>());
+        ClearHistory();
         OpenMenu(m_startMenu);
-
     }
 
 
-    // Update is called once per frame
-    void Update () {
+    public void ClearHistory()
+    {
+        m_history.Clear();
+        m_history.Push(MENUTYPE.NOTHING);
+        foreach (Menu menu in m_listMenu)
+        {
+            RealClose(menu, null);
+        }
+    }
 
-		MenuEntry menuEntry = Instance.m_listMenu.Find(x => x.m_type == Instance.m_currentMenu);
-		if (menuEntry != null)
-		{
-			MenuBackGround.INSTANCE.SetAlpha( menuEntry.m_menu.GetAlphaBack() );
+
+    void Update () 
+    {
+        MENUTYPE currentMenuType = m_history.Peek();
+        if(currentMenuType != MENUTYPE.NOTHING)
+        {
+            Menu menu = GetMenu(m_history.Peek());
+            if (menu != null)
+            {
+                MenuBackGround.Instance.SetAlpha(menu.GetAlphaBack());
+            }
         }
         else
         {
-            MenuBackGround.INSTANCE.Disable();
+            MenuBackGround.Instance.Disable();
         }
 
+      /*  if (Application.platform == RuntimePlatform.Android && Input.GetKeyDown(KeyCode.Escape))
+        {
+            if(m_history.Count > 2)
+            {
+                Back();
+            }
+            else
+            {
+                Utils.QuitApp();
+            }
+        }*/
     }
 
-	public Menu OpenMenu(MENUTYPE a_type)
+    public void OpenMenu(MENUTYPE a_type, MENUTYPE a_previous = MENUTYPE.NOTHING)
 	{
-        if (!m_everOpen)
+        if(a_type == MENUTYPE.NOTHING)
         {
-            m_everOpen = true;
-            CloseAllExcept(m_startMenu);
+            return;
         }
         
-        MenuEntry menuEntry = m_listMenu.Find(x => x.m_type == a_type);
-        if (menuEntry != null && a_type != m_currentMenu)
+        if ( a_type != m_history.Peek())
 		{
-            CloseMenu();
-            menuEntry.m_menu.gameObject.SetActive(true);
-            menuEntry.m_menu.OnOpen();
-            m_currentMenu = a_type;
-		}
-
-        Assert.AreNotEqual(menuEntry, null, "Menu " + a_type + " Unknow");
-    
-        return menuEntry != null ? menuEntry.m_menu : null;
-
+            CloseMenu(false, a_type);
+        }
     }
 
-
-#if NETWORK
-    public Menu OpenMenuEverywhere(MENUTYPE a_type)
+    void RealOpen(MENUTYPE a_type, MENUTYPE a_previous = MENUTYPE.NOTHING)
     {
-        RpcOpenMenu(a_type);
-        return OpenMenu(a_type);
+        Menu menu = GetMenu(a_type);
+        if (menu != null)
+        {
+            EnableMenu(menu, true);
+
+            if (a_previous == MENUTYPE.NOTHING)
+            {
+                a_previous = m_history.Peek();
+            }
+            if(m_history.Peek() != a_type)
+            {
+                m_history.Push(a_type);
+            }
+            menu.OnOpen(a_previous);
+        }
     }
 
 
-    [ClientRpc]
-    public void RpcOpenMenu(MENUTYPE a_type)
-    {
-        OpenMenu(a_type);
-    }
-#endif
-
-
-    public void CloseMenu()
+    public void CloseMenu(bool a_isBack = false, MENUTYPE a_nextMenu = MENUTYPE.NOTHING)
 	{
-		MenuEntry menuEntry = m_listMenu.Find(x => x.m_type == m_currentMenu);
-		if(menuEntry != null)
-		{
-            menuEntry.m_menu.OnClose();
-            menuEntry.m_menu.gameObject.SetActive(false);
-			m_currentMenu = MENUTYPE.NOTHING;
-		}
-	}
+        CloseMenu(m_history.Peek(), a_isBack, a_nextMenu);
+    }
+
+
+    public void CloseMenu(MENUTYPE a_menuType, bool a_isBack = false, MENUTYPE a_nextMenu = MENUTYPE.NOTHING)
+    {
+        Menu menu = GetMenu(a_menuType);
+        CloseMenu(menu, a_isBack, a_nextMenu);
+    }
+
+
+    public void CloseMenu(Menu a_menu, bool a_isBack = false, MENUTYPE a_nextMenu = MENUTYPE.NOTHING)
+    {
+        if (a_menu != null)
+        {
+            //if it'sthe current menu, process
+            if(m_history.Peek() == a_menu.MenuType)
+            {
+                Action callback;
+                MENUTYPE previous = m_history.Peek();
+                if (a_isBack)
+                {
+                    m_history.Pop();
+                    a_nextMenu = m_history.Peek();
+                }
+                callback = () => RealOpen(a_nextMenu, previous);
+                a_menu.OnClose(a_nextMenu, () => RealClose(a_menu, callback));
+            }
+        }
+        else
+        {
+            RealOpen(a_nextMenu);
+        }
+    }
+
+    public void Back()
+    {
+        CloseMenu(true);
+    }
+
+    void RealClose(Menu a_menu, Action a_callback)
+    {
+        EnableMenu(a_menu, false);
+        if (a_callback != null)
+        {
+            a_callback();
+        }
+    }
+
+    void EnableMenu(Menu a_menu, bool a_enable)
+    {
+        a_menu.GetComponent<ExtendCanvas>().enabled = a_enable;
+    }
+
 
     public void BackToMainMenu()
     {
+        CloseAll();
         OpenMenu(m_startMenu);
     }
 
+    public void CloseAll()
+    {
+        CloseMenu();
+        ClearHistory();
+    }
+
+    Menu GetMenu(MENUTYPE a_menuType)
+    {
+        return m_listMenu.Find(x => x.MenuType == a_menuType);
+    }
 
 }

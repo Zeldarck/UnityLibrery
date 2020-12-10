@@ -28,7 +28,7 @@ public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
 
     public static T Instance
     {
-        get
+        get 
         {
             if (applicationIsQuitting)
             {
@@ -66,7 +66,10 @@ public class Singleton<T> : MonoBehaviour where T : MonoBehaviour
                     }
                     else
                     {
-                        DontDestroyOnLoad(_instance);
+                        if(_instance.transform.parent == null)
+                        {
+                            DontDestroyOnLoad(_instance);
+                        }
                         Debug.Log("[Singleton] Using instance already created: " +
                             _instance.gameObject.name);
                     }
